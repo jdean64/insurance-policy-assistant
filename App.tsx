@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from './types';
-import { POLICY_DOCUMENT_TEXT } from './constants';
+import { POLICY_DOCUMENT_TEXT } from './constants.js';
 
 // For Speech Recognition API
 interface SpeechRecognition extends EventTarget {

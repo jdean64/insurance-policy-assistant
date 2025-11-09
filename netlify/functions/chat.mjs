@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 // We can import the policy text to include in the system prompt.
 // Note: This makes the function bundle larger but ensures context is always present.
-import { POLICY_DOCUMENT_TEXT } from "../../../constants";
+import { POLICY_DOCUMENT_TEXT } from "../../constants.js";
 
 const handler = async (event) => {
   // Only accept POST requests
