@@ -1,18 +1,26 @@
 import { GoogleGenAI } from "@google/genai";
-
-// We can import the policy text to include in the system prompt.
-// Note: This makes the function bundle larger but ensures context is always present.
+// FIX: Corrected the import path to point to the project root, removing the non-existent 'src' directory.
 import { POLICY_DOCUMENT_TEXT } from "../../constants.js";
 
 const handler = async (event) => {
-  // Only accept POST requests
-  if (event.httpMethod !== 'POST') {
+  // Allow OPTIONS requests for CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-      headers: { 'Allow': 'POST' }
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+      body: ''
     };
   }
+
+  // Set CORS headers for the actual request
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -26,6 +34,7 @@ const handler = async (event) => {
     if (!message) {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ error: 'Message is required.' }),
       };
     }
@@ -39,19 +48,19 @@ const handler = async (event) => {
     });
 
     const result = await chat.sendMessage(message);
+    const text = result.text;
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
+      body: JSON.stringify({ text }),
     };
 
   } catch (error) {
     console.error("Error in Netlify function:", error);
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message || 'An internal server error occurred.' }),
     };
   }

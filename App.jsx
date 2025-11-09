@@ -1,31 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from './types';
 import { POLICY_DOCUMENT_TEXT } from './constants.js';
-
-// For Speech Recognition API
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  onresult: ((this: SpeechRecognition, ev: any) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: any) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
 
 // The URL for the Netlify Function proxy
 const NETLIFY_FUNCTION_URL = '/.netlify/functions/chat';
 
 // --- Helper Functions ---
-const extractPolicyDetails = (text: string) => {
+const extractPolicyDetails = (text) => {
     const policyNumberMatch = text.match(/Policy Number\s+GIC\s+([\d\sA-Z]+)/) || text.match(/Policy Number\s+([\d\sA-Z]+)/);
     const effectiveDatesMatch = text.match(/EFFECTIVE:\s+([\d-]+)\s+TO:\s+([\d-]+)/);
     const namedInsuredMatch = text.match(/Named Insured and Residence Premises\s+([A-Z\s]+)\s+AND\s+([A-Z\s]+)/);
@@ -69,7 +49,7 @@ const extractPolicyDetails = (text: string) => {
 
 // --- React Components ---
 
-const PolicySummaryCard: React.FC = () => {
+const PolicySummaryCard = () => {
     const details = extractPolicyDetails(POLICY_DOCUMENT_TEXT);
 
     return (
@@ -161,7 +141,7 @@ const PolicySummaryCard: React.FC = () => {
 };
 
 
-const ChatMessageComponent: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
+const ChatMessageComponent = ({ msg }) => {
     const isModel = msg.role === 'model';
     const isSystem = msg.role === 'system';
     
@@ -185,10 +165,10 @@ const ChatMessageComponent: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
     );
 };
 
-const SearchModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const SearchModal = ({ onClose }) => {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<string[]>([]);
-    const modalRef = useRef<HTMLDivElement>(null);
+    const [results, setResults] = useState([]);
+    const modalRef = useRef(null);
 
     const performSearch = () => {
         if (!query.trim()) {
@@ -203,8 +183,8 @@ const SearchModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        const handleClickOutside = (event) => {
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
                 onClose();
             }
         };
@@ -212,7 +192,7 @@ const SearchModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
-    const highlightText = (text: string, highlight: string) => {
+    const highlightText = (text, highlight) => {
         if (!highlight.trim()) return text;
         const regex = new RegExp(`(${highlight})`, 'gi');
         return text.replace(regex, `<mark class="bg-yellow-300 dark:bg-yellow-500 rounded">$1</mark>`);
@@ -252,14 +232,14 @@ const SearchModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
-const App: React.FC = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+const App = () => {
+    const [messages, setMessages] = useState([]);
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [showSearchModal, setShowSearchModal] = useState(false);
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
-    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+    const recognitionRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         setMessages([{ role: 'model', content: <PolicySummaryCard /> }]);
@@ -269,18 +249,18 @@ const App: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const handleSendMessage = async (e: React.FormEvent, messageText?: string) => {
+    const handleSendMessage = async (e, messageText) => {
         e.preventDefault();
         const currentInput = (messageText || userInput).trim();
         if (!currentInput || isLoading) return;
 
-        const userMessage: ChatMessage = { role: 'user', content: currentInput };
+        const userMessage = { role: 'user', content: currentInput };
         
         const history = messages
             .filter(msg => typeof msg.content === 'string')
             .map(msg => ({
                 role: msg.role === 'model' ? 'model' : 'user',
-                parts: [{ text: msg.content as string }]
+                parts: [{ text: msg.content }]
             }));
             
         setMessages((prev) => [...prev, userMessage]);
@@ -305,7 +285,7 @@ const App: React.FC = () => {
             }
 
             const data = await response.json();
-            const modelResponse = data?.response?.text;
+            const modelResponse = data?.text;
             
             if (typeof modelResponse !== 'string') {
                  throw new Error("Received an invalid response format from the server.");
@@ -378,7 +358,7 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto p-4 md:p-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {messages.map((msg, index) => <ChatMessageComponent key={index} msg={msg} />)}
-                    {isLoading && messages[messages.length-1].role !== 'model' && (
+                    {isLoading && messages.length > 0 && messages[messages.length-1].role !== 'model' && (
                        <div className="flex justify-start w-full">
                            <div className="p-4 rounded-2xl max-w-lg md:max-w-2xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white">
                                <div className="flex items-center gap-2">
