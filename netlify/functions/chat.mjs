@@ -38,16 +38,34 @@ const handler = async (event) => {
         body: JSON.stringify({ error: 'Message is required.' }),
       };
     }
-    
+
+    const sanitizedHistory = Array.isArray(history)
+      ? history
+          .map((entry) => {
+            if (!entry || typeof entry !== 'object') {
+              return null;
+            }
+            const role = entry.role === 'model' ? 'model' : 'user';
+            const parts = Array.isArray(entry.parts)
+              ? entry.parts
+                  .filter((part) => part && typeof part.text === 'string')
+                  .map((part) => ({ text: part.text }))
+              : [];
+
+            return parts.length ? { role, parts } : null;
+          })
+          .filter(Boolean)
+      : [];
+
     const chat = ai.chats.create({
         model: 'gemini-flash-lite-latest',
         config: {
             systemInstruction: `You are an AI assistant for USAA insurance. Your task is to answer questions about the provided homeowners policy document. Base your answers strictly on the information within the document. If the answer cannot be found, state that the information isn't available in the policy provided. Here is the policy document:\n\n${POLICY_DOCUMENT_TEXT}`
         },
-        history: history || []
+        history: sanitizedHistory
     });
 
-    const result = await chat.sendMessage(message);
+    const result = await chat.sendMessage({ message });
     const text = result.text;
 
     return {
