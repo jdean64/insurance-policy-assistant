@@ -1,0 +1,7 @@
+{
+  "name": "Insurance Policy AI Assistant",
+  "description": "An intelligent chat assistant to help you understand your insurance policy. Upload your policy document and ask questions in plain English to get clear, concise answers about your coverage, deductibles, and more, powered by Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
