@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Dependencies for Netlify functions",
   "dependencies": {
-    "@google/genai": "^0.14.2"
+    "@google/genai": "^0.14.0"
   }
 }
